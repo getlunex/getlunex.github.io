@@ -1,13 +1,12 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { visualizer } from 'rollup-plugin-visualizer';
 import { VitePWA } from 'vite-plugin-pwa';
 import compression from 'vite-plugin-compression';
 import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/getlunex.github.io/', // Critical for GitHub Pages
+  base: '/', // Changed from '/getlunex.github.io/' to '/'
 
   plugins: [
     react(),
@@ -23,16 +22,16 @@ export default defineConfig({
         theme_color: '#00d4ff',
         background_color: '#0a0a1a',
         display: 'standalone',
-        scope: '/getlunex.github.io/',
-        start_url: '/getlunex.github.io/',
+        scope: '/',
+        start_url: '/',
         icons: [
           {
-            src: '/getlunex.github.io/logo-192.png',
+            src: '/logo-192.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: '/getlunex.github.io/logo-512.png',
+            src: '/logo-512.png',
             sizes: '512x512',
             type: 'image/png',
           },
@@ -49,9 +48,6 @@ export default defineConfig({
       },
     }),
 
-    // Visualize bundle size (open report.html after build)
-    visualizer({ open: false, gzipSize: true, brotliSize: true }),
-
     // Ultra-compress assets
     compression({
       algorithm: 'brotliCompress',
@@ -66,12 +62,12 @@ export default defineConfig({
 
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false, // Changed to false for smaller build size
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          ai: ['@google/generative-ai'], // if using Gemini
+          ai: ['@google/generative-ai'],
         },
       },
     },
@@ -83,13 +79,6 @@ export default defineConfig({
     port: 3000,
     host: '0.0.0.0',
     open: true,
-    proxy: {
-      '/api': {
-        target: 'https://generativelanguage.googleapis.com',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-    },
   },
 
   resolve: {
