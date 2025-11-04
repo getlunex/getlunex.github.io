@@ -25,14 +25,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          # Cache removed since we don't have a lock file
 
-      # ONLY ONE STEP: Install + Generate lock file
-      - name: Install Dependencies & Generate package-lock.json
+      - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
-      # NO npm ci — we don't need it
-      # Just build directly
       - name: Create .env File
         run: |
           echo "VITE_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
