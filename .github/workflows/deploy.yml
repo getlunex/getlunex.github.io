@@ -1,56 +1,95 @@
-name: Deploy to GitHub Pages
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
+import compression from 'vite-plugin-compression';
+import path from 'path';
 
-on:
-  push:
-    branches: [ "main" ]
-  workflow_dispatch:
+// https://vitejs.dev/config/
+export default defineConfig({
+  base: '/',
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+  plugins: [
+    react(),
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+    // PWA — Make Lunex installable like an app
+    VitePWA({
+      registerType: 'autoUpdate',
+      injectRegister: 'auto',
+      manifest: {
+        name: 'Lunex – AI SaaS for Teams',
+        short_name: 'Lunex',
+        description: 'Lunar-speed AI workflows, zero-code automation, seamless sync.',
+        theme_color: '#00d4ff',
+        background_color: '#0a0a1a',
+        display: 'standalone',
+        scope: '/',
+        start_url: '/',
+        icons: [
+          {
+            src: '/logo-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: '/logo-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+        ],
+      },
+      workbox: {
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.destination === 'script' || request.destination === 'style',
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'assets' },
+          },
+        ],
+      },
+    }),
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    // Ultra-compress assets
+    compression({
+      algorithm: 'brotliCompress',
+      ext: '.br',
+      deleteOriginalAssets: false,
+    }),
+    compression({
+      algorithm: 'gzip',
+      ext: '.gz',
+    }),
+  ],
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          # NO CACHE - we don't have a lock file
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    // REMOVED the problematic rollupOptions section
+    chunkSizeWarningLimit: 1000,
+    reportCompressedSize: true,
+  },
 
-      - name: Install Dependencies
-        run: npm install --legacy-peer-deps
+  server: {
+    port: 3000,
+    host: '0.0.0.0',
+    open: true,
+  },
 
-      - name: Create .env File
-        run: |
-          echo "VITE_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@components': path.resolve(__dirname, './src/components'),
+      '@services': path.resolve(__dirname, './src/services'),
+      '@assets': path.resolve(__dirname, './src/assets'),
+    },
+  },
 
-      - name: Build
-        run: npm run build
-        env:
-          VITE_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
 
-      - name: Upload Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dist
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+  preview: {
+    port: 4000,
+    open: true,
+  },
+});
