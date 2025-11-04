@@ -27,20 +27,26 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install Dependencies (Generate Lock File + Clean Install)
-        run: |
-          npm install --legacy-peer-deps
-          npm ci
+      # STEP 1: Generate package-lock.json
+      - name: Install Dependencies & Generate Lock File
+        run: npm install --legacy-peer-deps
 
-      - name: Create .env with API Key
+      # STEP 2: Use lock file for clean install
+      - name: Clean Install with Lock File
+        run: npm ci
+
+      # STEP 3: Create .env with API key
+      - name: Create .env File
         run: |
           echo "VITE_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
 
+      # STEP 4: Build the app
       - name: Build Vite App
         run: npm run build
         env:
           VITE_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
+      # STEP 5: Upload dist/ folder
       - name: Upload Build Artifact
         uses: actions/upload-pages-artifact@v3
         with:
